@@ -96,8 +96,8 @@ oc apply -k openshift/chat/dev
 
 For debug purposes - kafka tools
 ```bash
-oc -n quarkus-saga run tools --image=debezium/tooling --command -- bash -c 'sleep infinity'
-oc -n quarkus-saga rsh tools
+oc run tools --image=debezium/tooling --command -- bash -c 'sleep infinity'
+oc rsh tools
 kafkacat -b chat-cluster-kafka-bootstrap:9092 -L
 ```
 

@@ -6,7 +6,7 @@ Allows `users` to chat to `support` people.
 
 To become a support user, `connect` using `support<anything>`. Everyone else is a user. Try with multiple browser tabs. For now, only 1 `support` person is allocated per `user`. 
 
-Stores messages in Kafka that are streamed to Materialized database views in real-time.
+Stores messages in Kafka that are streamed to Materialized database views in real-time. Could also use Trino, Flink here.
 
 ### Run locally
 
@@ -22,7 +22,7 @@ mvn quarkus:dev
 
 Connect to `http://localhost:8080/` using multiple browser tabs.
 
-### Kappa architecture for data
+### Kappa Architecture for data
 
 Uses Kafka as the message store. Materialize as the streaming realtime database.
 

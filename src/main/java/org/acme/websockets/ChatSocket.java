@@ -1,9 +1,13 @@
 package org.acme.websockets;
 
+import io.smallrye.reactive.messaging.kafka.KafkaRecord;
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
 import javax.websocket.*;
 import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
@@ -18,7 +22,10 @@ public class ChatSocket {
 
     private final Logger log = LoggerFactory.getLogger(ChatSocket.class);
 
-    // FIXME session safe state
+    @Inject
+    @Channel("chats-emit-out")
+    Emitter<ChatMessage> chats;
+
     Map<String, Session> userSessions = new ConcurrentHashMap<>();
     Map<String, Session> supportSessions = new ConcurrentHashMap<>();
     Map<String, String> user2support = new ConcurrentHashMap<>();
@@ -36,7 +43,7 @@ public class ChatSocket {
             if (!user2support.containsValue(username)) { // support not engaged
                 if (user2support.containsValue("")) { // and we have users waiting
                     for (String key : user2support.keySet()) { // assign support to user
-                        if ("" == user2support.get(key)) {
+                        if ("".equals(user2support.get(key))) {
                             user2support.replace(key, "", username);
                             break;
                         }
@@ -52,7 +59,7 @@ public class ChatSocket {
             if (!user2support.containsValue(username) && idleSupport.isEmpty()) { // user not already added
                 user2support.put(username, "");
             }
-            if (! idleSupport.isEmpty()) {
+            if (!idleSupport.isEmpty()) {
                 user2support.put(username, idleSupport.remove());
             }
         }
@@ -121,13 +128,15 @@ public class ChatSocket {
 
     private void broadcast(String message, String username) {
         // user -> support
-        if (user2support.containsKey(username) && user2support.get(username) != "") {
+        if (user2support.containsKey(username) && !user2support.get(username).equals("")) {
             supportSessions.get(user2support.get(username)).getAsyncRemote().sendObject(message, result -> {
                 if (result.getException() != null) {
                     log.error("Support Unable to send message: " + result.getException());
                 }
             });
-
+            // we store messages to kafka only when user and support are connected
+            ChatMessage chatMessage = new ChatMessage(username, user2support.get(username), message);
+            chats.send(KafkaRecord.of(chatMessage.getId(), chatMessage));
         }
         // support -> user
         if (user2support.containsValue(username)) {
@@ -139,6 +148,9 @@ public class ChatSocket {
                             log.error("User Unable to send message: " + result.getException());
                         }
                     });
+                    // we store messages to kafka only when user and support are connected
+                    ChatMessage chatMessage = new ChatMessage(key, username, message);
+                    chats.send(KafkaRecord.of(chatMessage.getId(), chatMessage));
                 }
             }
         }

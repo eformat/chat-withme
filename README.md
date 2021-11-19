@@ -36,17 +36,23 @@ kafkacat -b localhost:9092 -t chats -o beginning -C -f '\nKey (%K bytes): %k
   Headers: %h'
 ```
 
-Realtime Materialized database
+Realtime Materialized schema
 ```bash
 psql -h localhost -p 6875 -U materialize materialize -f ./load.sql
-psql -h localhost -p 6875 -U materialize materialize -c 'select * from CHAT_ALL;'
-psql -h localhost -p 6875 -U materialize materialize -c 'select * from CHAT_TOTALS;'
+psql -h localhost -p 6875 -U materialize materialize -f ./drop.sql
+```
 
-watch -c "psql -h localhost -p 6875 -U materialize materialize -c 'select * from CHAT_ALL order by timestamp desc;'"
+Database queries
+```bash
+psql -h localhost -p 6875 -U materialize materialize -c "select * from CHAT_ALL;"
+psql -h localhost -p 6875 -U materialize materialize -c "select * from CHAT_TOTALS;"
+psql -h localhost -p 6875 -U materialize materialize -c "select * from CHAT_ALL where key in ('bob-support') order by timestamp desc;"
 ```
 
 e.g.
 ```bash
+watch -c "psql -h localhost -p 6875 -U materialize materialize -c 'select * from CHAT_ALL order by timestamp desc;'"
+
      key     |         timestamp          | username | supportname |        	                 message
 -------------+----------------------------+----------+-------------+-----------------------------------------------------------------
  bob-support | 2021-11-19 06:24:36.317+00 | bob      | support     | User bob left

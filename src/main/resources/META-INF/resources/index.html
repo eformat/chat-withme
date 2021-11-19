@@ -84,8 +84,12 @@
               if (name.match(/support.*/)) {
                   $("body").css("background-color","#CC0000");
               }
-              console.log("Val: " + name);
-              socket = new WebSocket("wss://" + location.host + "/chat/" + name);
+              console.log("val: " + name);
+              if (location.host.match(/localhost/)) {
+                  socket = new WebSocket("ws://" + location.host + "/chat/" + name);
+              } else {
+                  socket = new WebSocket("wss://" + location.host + "/chat/" + name);
+              }
               socket.onopen = function() {
                   connected = true;
                   console.log("Connected to the web socket");

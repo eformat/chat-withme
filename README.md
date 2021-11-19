@@ -1,8 +1,10 @@
 ## Quarkus Chat with Me Server
 
+![images/chat.gif](images/chat.gif)
+
 Allows `users` to chat to `support` people.
 
-To become a support user, `connect` using `support<anything>`. Everyone else is a user. 
+To become a support user, `connect` using `support<anything>`. Everyone else is a user. Try with multiple browser tabs. For now, only 1 `support` person is allocated per `user`. 
 
 ### Run locally
 

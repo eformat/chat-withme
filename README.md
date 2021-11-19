@@ -8,6 +8,8 @@ To become a support user, `connect` using `support<anything>`. Everyone else is 
 
 Stores messages in Kafka that are streamed to Materialized database views in real-time. Could also use Trino, Flink here.
 
+![images/chat-arch](images/chat-arch.png)
+
 ### Run locally
 
 Kafka, Materialize

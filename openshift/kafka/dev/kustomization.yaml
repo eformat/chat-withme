@@ -1,0 +1,5 @@
+namespace: chat
+
+resources:
+- chat_topic.yaml
+- kafka_persistent_cr.yaml

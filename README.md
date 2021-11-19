@@ -68,18 +68,51 @@ watch -c "psql -h localhost -p 6875 -U materialize materialize -c 'select * from
 
 ### Deploy to OpenShift
 
+This creates a demo in the `chat` namespace.
+
+Deploy kafka operator as cluster-admin
 ```bash
-# create local image
-mvn clean package -Pnative -Dquarkus.native.container-runtime=podman -Dquarkus.native.container-build=true -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel:21.3.0.0-Final-java17
-podman build . -t chat
-# push image to openshift
-oc new-project chat
-export HOST=$(oc get route default-route -n openshift-image-registry --template='{{ .spec.host }}')
-podman login -u $(oc whoami) -p $(oc whoami -t) $HOST
-podman tag localhost/chat:latest ${HOST}/$(oc project -q)/chat:latest
-podman push ${HOST}/$(oc project -q)/chat:latest
-# run the app
-oc new-app chat
-oc expose svc/chat
-oc patch route/chat --type=json -p '[{"op":"add", "path":"/spec/tls", "value":{"termination":"edge","insecureEdgeTerminationPolicy":"Redirect"}}]'
+oc apply -k openshift/kafka/base
 ```
+
+Deploy kafka CR
+```bash
+oc apply -k openshift/kafka/dev
+```
+
+Deploy materialize
+```bash
+oc apply -k openshift/materialize/dev
+```
+
+Deploy chat
+```bash
+oc apply -k openshift/chat/dev
+```
+
+### Debug Tools for OpenShift
+
+For debug purposes - kafka tools
+```bash
+oc -n quarkus-saga run tools --image=debezium/tooling --command -- bash -c 'sleep infinity'
+oc -n quarkus-saga rsh tools
+kafkacat -b chat-cluster-kafka-bootstrap:9092 -L
+```
+
+Watch processed topic
+```bash
+kafkacat -b chat-cluster-kafka-bootstrap:9092 -t chats -o beginning -C -f '\nKey (%K bytes): %k
+  Value (%S bytes): %s
+  Timestamp: %T
+  Partition: %p
+  Offset: %o
+  Headers: %h'
+```
+
+Port forward materialize port
+```bash
+oc port-forward svc/materialize 6875:6875 &
+psql -h localhost -p 6875 -U materialize materialize -c 'select * from CHAT_ALL order by timestamp desc;'
+```
+
+

@@ -1,0 +1,136 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  labels:
+    app.kubernetes.io/part-of: tripvibe
+    app: materialize
+  name: materialize
+spec:
+  podManagementPolicy: Parallel
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: materialize
+  serviceName: materialize
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app.kubernetes.io/part-of: tripvibe
+        app: materialize
+      name: materialize
+    spec:
+      initContainers:
+        - name: clean
+          image: registry.redhat.io/ubi8/ubi:latest
+          command: [sh, -c]
+          args:
+            - 'rm -f /work/mzdata/catalog'
+          volumeMounts:
+            - mountPath: /work/mzdata
+              name: mzdata
+      containers:
+        - image: registry.redhat.io/rhel8/postgresql-96:latest
+          imagePullPolicy: IfNotPresent
+          name: init-sidecar
+          command:
+            - /bin/sh
+            - -c
+            - 'while true; do psql -q -h localhost -p 6875 -U materialize materialize -c "SHOW CREATE VIEW CHAT_ALL" 1>/dev/null; if [ $? -eq 1 ]; then echo " 🏗 no schema found - creating one 🏗"; psql -h materialize -p 6875 -U materialize materialize -f /tmp/schema/load.sql; fi; sleep 10; done'
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+            - mountPath: /tmp/schema/load.sql
+              name: schema
+              subPath: load.sql
+        - command:
+            - /usr/local/bin/materialized
+            - -w=2
+          env:
+            - name: PATH
+              value: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+            - name: TERM
+              value: xterm
+            - name: container
+              value: oci
+            - name: HOSTNAME
+              value: materalize
+          image: quay.io/eformat/materialize-pod:latest
+          name: materialize-pod
+          resources: {}
+          securityContext: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+            - mountPath: /work/mzdata
+              name: mzdata
+          workingDir: /work
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+      volumes:
+        - configMap:
+            defaultMode: 420
+            name: schema
+          name: schema
+  updateStrategy:
+    type: OnDelete
+  volumeClaimTemplates:
+    - metadata:
+        creationTimestamp: null
+        name: mzdata
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 10Gi
+        volumeMode: Filesystem
+---
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  labels:
+    app: materialize
+  name: materialize
+spec:
+  ports:
+  - name: psql
+    port: 6875
+    protocol: TCP
+    targetPort: 6875
+  selector:
+    app: materialize
+  sessionAffinity: None
+  type: ClusterIP
+status:
+  loadBalancer: {}
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: schema
+data:
+  load.sql: |+
+    CREATE SOURCE chats
+    FROM KAFKA BROKER 'chat-cluster-kafka-bootstrap:9092' TOPIC 'chats'
+    FORMAT TEXT;
+
+    CREATE MATERIALIZED VIEW CHAT_ALL AS
+    SELECT (text::JSONB)->>'id' as key,
+    CAST(CAST((text::JSONB)->>'timestamp' as text) as timestamptz) as timestamp,
+    (text::JSONB)->>'username' as username,
+    (text::JSONB)->>'supportname' as supportname,
+    (text::JSONB)->>'message' as message
+    FROM (SELECT * FROM chats);
+
+    CREATE MATERIALIZED VIEW CHAT_TOTALS AS
+    SELECT key, COUNT(*)
+    FROM CHAT_ALL
+    GROUP BY key;

@@ -1,0 +1,6 @@
+namespace: chat
+
+resources:
+- namespace.yaml
+- operator-group.yaml
+- subscription.yaml

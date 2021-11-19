@@ -1,0 +1,26 @@
+---
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: chat
+  creationTimestamp: null
+  labels:
+    app: chat
+    app.kubernetes.io/component: chat
+    app.kubernetes.io/instance: chat
+spec:
+  to:
+    kind: Service
+    name: chat
+    weight: 100
+  port:
+    targetPort: 8080-tcp
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+  wildcardPolicy: None
+status:
+  ingress:
+    - conditions:
+        - status: 'True'
+          type: Admitted

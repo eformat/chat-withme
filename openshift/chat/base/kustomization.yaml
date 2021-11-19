@@ -1,0 +1,7 @@
+namespace: chat
+
+resources:
+- imagestream.yaml
+- service.yaml
+- deployment.yaml
+- route.yaml

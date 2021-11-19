@@ -1,0 +1,14 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  annotations:
+    openshift.io/description: "chat"
+    openshift.io/display-name: "chat"
+    argocd.argoproj.io/sync-wave: "-1"
+  labels:
+    openshift.io/cluster-monitoring: "true"
+  name: chat
+spec:
+  finalizers:
+  - kubernetes

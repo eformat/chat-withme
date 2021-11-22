@@ -70,9 +70,9 @@ watch -c "psql -h localhost -p 6875 -U materialize materialize -c 'select * from
 (8 rows)
 ```
 
-### Sentiment Analysis using Spark for Streaming
+### NLP Sentiment Analysis using Spark for Streaming
 
-Checkout the [`sentiment.ipynb`](sentiment.ipynb) notebook for sentiment analysis using Spark for Streaming.
+Checkout the [`sentiment.ipynb`](sentiment.ipynb) notebook for natural language processing and sentiment analysis using Spark for Streaming.
 
 ![images/sentiment-spark.png](images/sentiment-spark.png)
 

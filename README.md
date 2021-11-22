@@ -6,7 +6,9 @@ Allows `users` to chat to `support` people.
 
 To become a support user, `connect` using `support<anything>`. Everyone else is a user. Try with multiple browser tabs. For now, only 1 `support` person is allocated per `user`. 
 
-Stores messages in Kafka that are streamed to Materialized database views in real-time. Could also use Trino, Flink here.
+Stores messages in Kafka that are streamed to Materialized database views in real-time. Could also use Trino, Flink, Superset here.
+
+A Spark notebook for performing NLP Sentiment Analysis on the chat.
 
 ![images/chat-arch](images/chat-arch.png)
 
